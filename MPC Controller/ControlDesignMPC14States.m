@@ -3,16 +3,16 @@ clear;     % clear workspace variables
 clc;       % clear command window
 format short;
 
-%% Octave Packeges
+%%  Octave Packeges
 pkg load control;
 pkg load optim;
 
-%% Mass of the Multirotor in Kilograms as taken from the CAD
+%%  Mass of the Multirotor in Kilograms as taken from the CAD
 
 M = 1.455882; 
 g = 9.81;
 
-%% Dimensions of Multirotor
+%%  Dimensions of Multirotor
 
 L1 = 0.19; % along X-axis Distance from left and right motor pair to center of mass
 L2 = 0.18; % along Y-axis Vertical Distance from left and right motor pair to center of mass
@@ -24,7 +24,7 @@ Ixx = 0.014;
 Iyy = 0.028;
 Izz = 0.038;
 
-%% Motor Thrust and Torque Constants (To be determined experimentally)
+%%  Motor Thrust and Torque Constants (To be determined experimentally)
 
 Kw = 0.85;
 Ktau =  7.708e-10;
@@ -33,13 +33,13 @@ Kthrust2 = 0.0007326;
 Mtau = (1/44.22);
 Ku = 515.5*Mtau;
 
-%% Air resistance damping coeeficients
+%%  Air resistance damping coeeficients
 
 Dxx = 0.01212;
 Dyy = 0.01212;
 Dzz = 0.0648;                          
 
-%% Equilibrium Input 
+%%  Equilibrium Input 
 
 %W_e = sqrt(((M*g)/(3*(Kthrust+(Kw*Kthrust)))));
 %W_e = ((-6*Kthrust2) + sqrt((6*Kthrust2)^2 - (4*(-M*g)*(3*Kw*Kthrust + 3*Kthrust))))/(2*(3*Kw*Kthrust + 3*Kthrust));
@@ -47,13 +47,13 @@ Dzz = 0.0648;
 U_e = [176.1,178.5,177.2,177.6,202.2,204.5]';
 W_e = U_e*Ku;
 
-%% Define Discrete-Time BeagleBone Dynamics
+%%  Define Discrete-Time BeagleBone Dynamics
 
 T = 0.01; % Sample period (s)- 100Hz
 ADC = 3.3/((2^12)-1); % 12-bit ADC Quantization
 DAC =  3.3/((2^12)-1); % 12-bit DAC Quantization
 
-%% Define Linear Continuous-Time Multirotor Dynamics: x_dot = Ax + Bu, y = Cx + Du         
+%%  Define Linear Continuous-Time Multirotor Dynamics: x_dot = Ax + Bu, y = Cx + Du         
 
 % A =  14x14 matrix
 A = [0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
@@ -96,7 +96,7 @@ C = [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
 % D = 4x6 matrix
 D = 0;
 
-%% Discrete-Time System
+%%  Discrete-Time System
 
 sysdt = c2d(ss(A,B,C,D),T,'zoh');  % Generate Discrete-Time System
 
@@ -107,9 +107,9 @@ Ddt = sysdt.d;
 
 r = 4;                               % number of reference inputs
 n = size(Adt,2);                     % number of states
-q = size(Cdt,1);                       % number of controlled outputs
+q = size(Cdt,1);                     % number of controlled outputs
 
-%% Discrete-Time Full State-Feedback Control
+%%  Discrete-Time Full State-Feedback Control
 % State feedback control, Z Phi Theta Psi are controlled outputs
 
 Q = diag([500,0,1000,0,1000,0,1000,0,0,0,0,0,0,0]); % State penalty
@@ -117,7 +117,7 @@ R = (0.5*10^-3)*eye(6,6);  % Control penalty
 
 Kdt = dlqr(Adt,Bdt,Q,R); % DT State-Feedback Controller Gains
 
-%% LQR Dynamic Simulation
+%%  LQR Dynamic Simulation
 
 Time = 10;
 kT = round(Time/T);
@@ -136,7 +136,7 @@ for k = 1:kT-1
     X(:,k+1) = Adt*X(:,k) + Bdt*U(:,k);
 end
 
-%% Plots
+%%  Plots
 
 t = (0:kT-1)*T;
 Rad2Deg = [180/pi,180/pi,180/pi]';
@@ -160,7 +160,8 @@ legend('U1','U2','U3','U4','U5','U6');
 title('LQR Inputs PWM Signal');
 ylabel('Micro Seconds(ms)');
 
-%% Discrete-Time Kalman Filter Design x_dot = A*x + B*u + G*w, y = C*x + D*u + H*w + v
+%%  Discrete-Time Kalman Filter Design 
+% x_dot = A*x + B*u + G*w, y = C*x + D*u + H*w + v
 % Utilises a 6 output model with motor 1 and 4 velocities being used as
 % virtual aditiional outputs. This is due to layout coupling leading to many different
 % combintaions of motor velocity producing the same outcome, therefore
@@ -188,7 +189,7 @@ Ldt = dlqe(Adt,Gdt,Cy,Rw,Rv);
 
 %[kdfilt,Ldt] = kalman(sys4kf,Rw,Rv); 
 
-%%   Terminal State Penalty
+%%  Terminal State Penalty
 
 Phi = (Adt - Bdt*Kdt);  % Closed Loop System
 S = (Q + Kdt' * R * Kdt);
@@ -204,7 +205,7 @@ N = 15;  % Prediction Horizon
 Px = [eye(14); -1*eye(14)];
 qx = [inf;inf;inf;inf;inf;inf;inf;inf;inf;inf;inf;inf;inf;inf;
       inf;inf;inf;inf;inf;inf;inf;inf;inf;inf;inf;inf;inf;inf]; % State Constraints
-% 
+      
 Pxf = Px;
 qxf = qx; % Terminal State Constraints
 % 
@@ -229,7 +230,7 @@ qu = [800*ones(6,1); zeros(6,1)]; % Input Constraints
 % umin = zeros(6,1);
 % umax = 800*ones(6,1);
 
-%% LQ-MPC Dynamic Simulation
+%%  LQ-MPC Dynamic Simulation
 
 Time = 10;
 kT = round(Time/T);
@@ -252,7 +253,8 @@ Xest = X;
 
 for k = 2:kT-1
     
-    %%Reference Setting
+%%  Reference Setting
+
     if k == 1/T
         Ref(1) = 1;
     end
@@ -272,37 +274,40 @@ for k = 2:kT-1
         Ref(4) = 45*pi/180;
     end
     
-    %%Estimation
+%%  Estimation
+
 %    Xest(:,k) = Adt*Xest(:,k-1) + Bdt*(U(:,k-1)-U_e); % No KF Linear Prediction   
      
 %    Xest(:,k) = Xreal([5,6,7,8,9,10,11,12,13:18],k);  % No KF Non Linear Prediction
 
-   t_span = [0,T];
-   xkf = [0;0;0;0;Xest(:,k-1)];  
-   xode = ode45(@(t,X) Hex_Dynamics(t,X,U(:,k-1)),t_span,xkf); % Nonlinear Prediction
-   Xest(:,k) = xode.y(5:18,end);
-   Y(:,k) = Xreal([5,7,9,11],k);
-   e(:,k) = [Y(:,k) - Xest([1,3,5,7],k); 0; 0];
-   Xest(:,k) = Xest(:,k) + Ldt*e(:,k);
-    
-%     Y(:,k) = Xreal([5,7,9,11],k);
-%     Xest(:,k) = Adt*Xest(:,k-1) + Bdt*(U(:,k-1)-U_e);   % Linear Prediction
-%     e(:,k) = [Y(:,k) - Xest([1,3,5,7],k); 0; 0];
-%     Xest(:,k) = Xest(:,k) + Ldt*e(:,k);
+%    Y(:,k) = Xreal([5,7,9,11],k);
+%    Xest(:,k) = Adt*Xest(:,k-1) + Bdt*(U(:,k-1)-U_e);   % Linear Prediction
+%    e(:,k) = [Y(:,k) - Xest([1,3,5,7],k); 0; 0];
+%    Xest(:,k) = Xest(:,k) + Ldt*e(:,k);
 
-    %%Control 
-    %[Cost(:,k),U(:,k),c(:,k)] = ompc_constraints(Adt,Bdt,Cdt,Ddt,N,Q,R,Q,R,(Xest(:,k) - [Ref(1);0;Ref(2);0;Ref(3);0;Ref(4);0;W_e]),umin,umax,Kxmax,xmax);
+    t_span = [0,T];
+    xkf = [0;0;0;0;Xest(:,k-1)];  
+    xode = ode45(@(t,X) Hex_Dynamics(t,X,U(:,k-1)),t_span,xkf); % Nonlinear Prediction
+    Xest(:,k) = xode.y(5:18,end);
+    Y(:,k) = Xreal([5,7,9,11],k);
+    e(:,k) = [Y(:,k) - Xest([1,3,5,7],k); 0; 0];
+    Xest(:,k) = Xest(:,k) + Ldt*e(:,k);
+
+%%  Control Open-Loop Prediction
     
-    %%Control ClosedLoop Prediction
-    %[c(:,k),Cost(:,k)] = quadprog(((SC+SC')/2),SXC'*Xest(:,k)); % Pc,qc + Sc*Xest(:,k) Solve Quadratic program
-    %U(:,k) =  -Kdt*(Xest(:,k) - [Ref(1);0;Ref(2);0;Ref(3);0;Ref(4);0;W_e]) + c(1:6,k) + U_e;
-    %J(:,k) = Xest(:,k)'*SX*Xest(:,k) + 2*c(:,k)'*SXC'*Xest(:,k) + c(:,k)'*SC*c(:,k);
-    
-    %%Control OpenLoop Prediction
-    [Useq,Cost(:,k)] = quadprog(H,L*(Xest(:,k)- [0;0;0;0;0;0;0;0;W_e]),Pc,qc + Sc*Xest(:,k));% Solve Quadratic program
+    [Useq,Cost(:,k)] = quadprog(H,L*(Xest(:,k)- [Ref(1);0;Ref(2);0;Ref(3);0;Ref(4);0;W_e]),Pc,qc + Sc*Xest(:,k));% Solve Quadratic program
     U(:,k) =  Useq(1:6) + U_e;
     
-    %%Simulation    
+%%  Control Closed-Loop Prediction
+    
+%    [Cost(:,k),U(:,k),c(:,k)] = ompc_constraints(Adt,Bdt,Cdt,Ddt,N,Q,R,Q,R,(Xest(:,k) - [Ref(1);0;Ref(2);0;Ref(3);0;Ref(4);0;W_e]),umin,umax,Kxmax,xmax);
+    
+%    [c(:,k),Cost(:,k)] = quadprog(((SC+SC')/2),SXC'*Xest(:,k)); % Pc,qc + Sc*Xest(:,k) Solve Quadratic program
+%    U(:,k) =  -Kdt*(Xest(:,k) - [Ref(1);0;Ref(2);0;Ref(3);0;Ref(4);0;W_e]) + c(1:6,k) + U_e;
+%    J(:,k) = Xest(:,k)'*SX*Xest(:,k) + 2*c(:,k)'*SXC'*Xest(:,k) + c(:,k)'*SC*c(:,k);
+    
+%%  Simulation    
+    
     t_span = [0,T];
     xode = ode45(@(t,X) Hex_Dynamics(t,X,U(:,k)),t_span,Xreal(:,k)); % Runge-Kutta Integration Nonlinear Dynamics
     Xreal(:,k+1) = xode.y(:,end);
